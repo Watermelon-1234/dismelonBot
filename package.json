@@ -1,0 +1,28 @@
+{
+  "name": "dismelonbot",
+  "version": "1.0.0",
+  "description": "so poor",
+  "main": "main.js",
+  "scripts": {
+    "test": "node main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Watermelon-1234/dismelonBot.git"
+  },
+  "keywords": [
+    "disordBot",
+    "javascript"
+  ],
+  "author": "Watermelon-1234",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Watermelon-1234/dismelonBot/issues"
+  },
+  "homepage": "https://github.com/Watermelon-1234/dismelonBot#readme",
+  "dependencies": {
+    "discord.js": "^14.16.2",
+    "googleapis": "^144.0.0",
+    "node-cron": "^3.0.3"
+  }
+}

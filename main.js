@@ -14,6 +14,7 @@ const CHANNEL_ID = config.CHANNEL_ID;  // 發送訊息的頻道
 const CREDENTIALS_PATH = config.CREDENTIALS_PATH;  // Google API JSON key
 const REMINDED_EVENTS_PATH = config.REMINDED_EVENTS_PATH;  // 存儲已提醒事件的文件路徑
 const SERVER_ID = config.SERVER_ID; // 替換成你的伺服器 ID
+const CHECK_FREQUENCY = config.CHECK_FREQUENCY;
 
 // Setup Discord bot
 const client = new Client({
@@ -26,6 +27,34 @@ const client = new Client({
 });
 
 var remindedEvents = new Set();
+
+// 檢查並創建 log 資料夾
+const logDir = path.join(__dirname, 'log');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
+
+// 創建可寫的 log 文件流
+const logStream = fs.createWriteStream(path.join(logDir, 'output.log'), { flags: 'a' });
+const errorStream = fs.createWriteStream(path.join(logDir, 'error.log'), { flags: 'a' });
+
+// 保留原本的 console 方法
+const originalLog = console.log;
+const originalError = console.error;
+
+// 覆寫 console.log
+console.log = function (...args) {
+  const message = args.map(arg => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ');
+  logStream.write(`${new Date().toISOString()} - LOG: ${message}\n`);
+  originalLog.apply(console, args); // 依然輸出到控制台
+};
+
+// 覆寫 console.error
+console.error = function (...args) {
+  const message = args.map(arg => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ');
+  errorStream.write(`${new Date().toISOString()} - ERROR: ${message}\n`);
+  originalError.apply(console, args); // 依然輸出到控制台
+};
 
 // Google API Authentication
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
@@ -77,7 +106,7 @@ async function getUpcomingEvents() {
     const res = await calendar.events.list({
       calendarId: CALENDAR_ID,
       timeMin: (new Date()).toISOString(),
-      maxResults: 10,
+      maxResults: 50,
       singleEvents: true,
       orderBy: 'startTime',
     });
@@ -150,43 +179,55 @@ async function sendReminders() {
         return;
       }
       const daysUntilEvent = Math.ceil((eventTime - now) / (1000 * 60 * 60 * 24));
-      // console.log(daysUntilEvent);
-      // 檢查是否在提醒日期
-      if ((daysUntilEvent === 7 || daysUntilEvent === 3 || daysUntilEvent === 1 || daysUntilEvent === 0) && !remindedEvents.has(event.id)) {
-        const roleId = getRoleIdFromDescription(event.description, roleIdMap);
-        const channel = client.channels.cache.get(CHANNEL_ID);
+		// 檢查是否在提醒日期
+		if (
+		  (daysUntilEvent <= 30 && daysUntilEvent % 7 === 0) || // 倒數 30 天內，每 7 天提醒一次
+		  (daysUntilEvent <= 14 && daysUntilEvent % 2 === 0) || // 倒數 14 天內，每 2 天提醒一次
+		  (daysUntilEvent <= 7) // 倒數 7 天內，每天提醒一次
+		) {
+		  if (!remindedEvents.has(event.id + daysUntilEvent)) {
+			const roleId = getRoleIdFromDescription(event.description, roleIdMap);
+			const channel = client.channels.cache.get(CHANNEL_ID);
 
-        if (!channel) {
-          console.error('Discord channel not found!');
-          return;
-        }
+			if (!channel) {
+			  console.error('Discord channel not found!');
+			  return;
+			}
 
-        // 發送訊息並標註 role_id (如果存在)
-        let reminderMessage = `Reminder: ${event.summary} is on ${eventTime.toLocaleDateString()}`;
-        if (roleId) {
-          reminderMessage = `<@&${roleId}> ${reminderMessage}`;  // 標註指定的身份組
-        }
-        console.log(`Sending reminder: ${reminderMessage}`);
-        channel.send(reminderMessage).catch(error => {
-          console.error('Error sending message to Discord:', error);
-        });
+			// 發送訊息並標註 role_id (如果存在)
+			let reminderMessage = `Reminder: ${event.summary} is on ${eventTime.toLocaleDateString()}`;
+			if (roleId) {
+			  reminderMessage = `<@&${roleId}> ${reminderMessage}`;  // 標註指定的身份組
+			}
+			console.log(`Sending reminder: ${reminderMessage}`);
+			channel.send(reminderMessage).catch(error => {
+			  console.error('Error sending message to Discord:', error);
+			});
 
-        // 記錄已經提醒過的事件
-        remindedEvents.add(event.id);
-        saveRemindedEvents(remindedEvents);
-      } else {
-        console.error(`Event "${event.summary}" is not in the reminder window or already reminded.`);
-      }
+			// 記錄已經提醒過的事件
+			remindedEvents.add(event.id + daysUntilEvent);
+			saveRemindedEvents(remindedEvents);
+		  } else {
+			console.error(`Event "${event.summary}" already reminded for day ${daysUntilEvent}.`);
+		  }
+		}
+		else
+		{
+			console.log(`Event "${event.summary}" does not match the messenge send time`);
+		}
     });
   }
 }
 
-// Schedule to run every day at 00:00
-cron.schedule('0 0 * * *', () => {
+// Schedule to run every day at 06:00
+// cron.schedule('0 0 6 * *', () => {
+cron.schedule(CHECK_FREQUENCY, () => {
   console.log('Running scheduled task to check events...');
   sendReminders().catch(error => {
     console.error('Error in scheduled task:', error);
   });
+  // 載入已提醒事件
+  remindedEvents = loadRemindedEvents();
 });
 
 // 啟動機器人
