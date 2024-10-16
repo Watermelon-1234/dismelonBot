@@ -80,6 +80,14 @@ sudo systemctl stop discord-bot
 ```bash
 sudo systemctl disable discord-bot
 ```
+### pm2-背景執行service
+不知道為什麼nohup跑幾天之後又爛掉了 這樣一直重開也不是辦法
+所幸試試看 
+安裝:npm install --global pm2
+然後使用pm2不知道為什麼我的nas都需要sudo 我猜可能他有自己的permition設置
+[參考](https://ithelp.ithome.com.tw/articles/10220480)
+pm2 start --name dismelonbot main.js
+開機啟動 : `pm2 startup` 然後`pm2 save`
 
 #### 關閉手動運行的機器人
 如果你是手動在背景啟動機器人，你可以使用 `ps` 指令查找並終止機器人進程：

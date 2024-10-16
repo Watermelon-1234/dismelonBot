@@ -220,14 +220,18 @@ async function sendReminders() {
 }
 
 // Schedule to run every day at 06:00
-// cron.schedule('0 0 6 * *', () => {
-cron.schedule(CHECK_FREQUENCY, () => {
+cron.schedule('0 0 6 * *', () => {
+// cron.schedule(CHECK_FREQUENCY, () => {
   console.log('Running scheduled task to check events...');
   sendReminders().catch(error => {
     console.error('Error in scheduled task:', error);
   });
   // 載入已提醒事件
   remindedEvents = loadRemindedEvents();
+}, 
+{
+	scheduled: true,
+	timezone: "Asia/Taipei"// 指定時區
 });
 
 // 啟動機器人
