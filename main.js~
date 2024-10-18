@@ -164,9 +164,7 @@ async function sendReminders() {
 
   if (events.length === 0) {
     console.error('No upcoming events found.');
-  } 
-  else 
-  {
+  } else {
     events.forEach(event => {
       var eventTime;
       if(event.start.date)
@@ -181,51 +179,49 @@ async function sendReminders() {
         return;
       }
       const daysUntilEvent = Math.ceil((eventTime - now) / (1000 * 60 * 60 * 24));
-      // 檢查是否在提醒日期
-      if (
-        (daysUntilEvent <= 30 && daysUntilEvent % 7 === 0) || // 倒數 30 天內，每 7 天提醒一次
-        (daysUntilEvent <= 14 && daysUntilEvent % 2 === 0) // || // 倒數 14 天內，每 2 天提醒一次
-        // (daysUntilEvent <= 7) // 倒數 7 天內，每天提醒一次
-      ) {
-        if (!remindedEvents.has(event.id + daysUntilEvent)) {
-        const roleId = getRoleIdFromDescription(event.description, roleIdMap);
-        const channel = client.channels.cache.get(CHANNEL_ID);
+		// 檢查是否在提醒日期
+		if (
+		  (daysUntilEvent <= 30 && daysUntilEvent % 7 === 0) || // 倒數 30 天內，每 7 天提醒一次
+		  (daysUntilEvent <= 14 && daysUntilEvent % 2 === 0) || // 倒數 14 天內，每 2 天提醒一次
+		  (daysUntilEvent <= 7) // 倒數 7 天內，每天提醒一次
+		) {
+		  if (!remindedEvents.has(event.id + daysUntilEvent)) {
+			const roleId = getRoleIdFromDescription(event.description, roleIdMap);
+			const channel = client.channels.cache.get(CHANNEL_ID);
 
-        if (!channel) {
-          console.error('Discord channel not found!');
-          return;
-        }
+			if (!channel) {
+			  console.error('Discord channel not found!');
+			  return;
+			}
 
-        // 發送訊息並標註 role_id (如果存在)
-        let reminderMessage = `Reminder: ${event.summary} is on ${eventTime.toLocaleDateString()}`;
-        if (roleId) {
-          reminderMessage = `<@&${roleId}> ${reminderMessage}`;  // 標註指定的身份組
-        }
-        console.log(`Sending reminder: ${reminderMessage}`);
-        channel.send(reminderMessage).catch(error => {
-          console.error('Error sending message to Discord:', error);
-        });
+			// 發送訊息並標註 role_id (如果存在)
+			let reminderMessage = `Reminder: ${event.summary} is on ${eventTime.toLocaleDateString()}`;
+			if (roleId) {
+			  reminderMessage = `<@&${roleId}> ${reminderMessage}`;  // 標註指定的身份組
+			}
+			console.log(`Sending reminder: ${reminderMessage}`);
+			channel.send(reminderMessage).catch(error => {
+			  console.error('Error sending message to Discord:', error);
+			});
 
-        // 記錄已經提醒過的事件
-        remindedEvents.add(event.id + daysUntilEvent);
-        saveRemindedEvents(remindedEvents);
-        } else {
-        console.error(`Event "${event.summary}" already reminded for day ${daysUntilEvent}.`);
-        }
-      }
-      else
-      {
-        console.log(`Event "${event.summary}" does not match the messenge send time`);
-      }
+			// 記錄已經提醒過的事件
+			remindedEvents.add(event.id + daysUntilEvent);
+			saveRemindedEvents(remindedEvents);
+		  } else {
+			console.error(`Event "${event.summary}" already reminded for day ${daysUntilEvent}.`);
+		  }
+		}
+		else
+		{
+			console.log(`Event "${event.summary}" does not match the messenge send time`);
+		}
     });
   }
-  console.log("sendReminders finish")
 }
-
+/*
 // Schedule to run every day at 06:00
-// cron.schedule('0 0 6 * *', () => {
-// cron.schedule('*/10 * * * * *', () => {
-cron.schedule(CHECK_FREQUENCY, () => {
+cron.schedule('0 0 6 * *', () => {
+// cron.schedule(CHECK_FREQUENCY, () => {
   console.log('Running scheduled task to check events...');
   sendReminders().catch(error => {
     console.error('Error in scheduled task:', error);
@@ -237,7 +233,7 @@ cron.schedule(CHECK_FREQUENCY, () => {
 	scheduled: true,
 	timezone: "Asia/Taipei"// 指定時區
 });
-
+*/
 // 啟動機器人
 client.once('ready', async () => {
   console.log('Bot is online and ready!');
@@ -259,25 +255,25 @@ client.once('ready', async () => {
   sendReminders().catch(error => {
     console.error('Error in scheduled task:', error);
   });
-  // console.log("test");
+
 	// Schedule to run every day at 06:00
-  // cron.schedule('*/15 * * * *', () => {
-	// // cron.schedule('0 0 6 * *', () => {
-	// // cron.schedule(CHECK_FREQUENCY, () => {
-	//   console.log('Running scheduled task to check events...');
-	//   sendReminders().catch(error => {
-	//     console.error('Error in scheduled task:', error);
-	//   });
-	//   // 載入已提醒事件
-	//   remindedEvents = loadRemindedEvents();
-	// }, 
-	// {
-	// 	scheduled: true,
-	// 	timezone: "Asia/Taipei"// 指定時區
-	// });
+	// cron.schedule('*/10 * * * *', () => {
+	cron.schedule('0 0 6 * *', () => {
+	// cron.schedule(CHECK_FREQUENCY, () => {
+	  console.log('Running scheduled task to check events...');
+	  sendReminders().catch(error => {
+	    console.error('Error in scheduled task:', error);
+	  });
+	  // 載入已提醒事件
+	  remindedEvents = loadRemindedEvents();
+	}, 
+	{
+		scheduled: true,
+		timezone: "Asia/Taipei"// 指定時區
+	});
 	/*
 	cron.schedule('* * * * *', () => {
-	  console.log("I alive");
+	   console.log("I alive");
 	});
 	*/
 
