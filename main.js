@@ -15,7 +15,8 @@ const CREDENTIALS_PATH = config.CREDENTIALS_PATH;  // Google API JSON key
 const REMINDED_EVENTS_PATH = config.REMINDED_EVENTS_PATH;  // 存儲已提醒事件的文件路徑
 const SERVER_ID = config.SERVER_ID; // 替換成你的伺服器 ID
 const CHECK_FREQUENCY = config.CHECK_FREQUENCY;
-
+console.log(CHECK_FREQUENCY);
+console.log(typeof CHECK_FREQUENCY);
 // Setup Discord bot
 const client = new Client({
   intents: [
